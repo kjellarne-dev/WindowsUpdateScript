@@ -23,19 +23,20 @@ EventID overview for Windows Update-script
 2042 – Did not find any new updates
 2043 – Any unexpected errors caught while searching for, downloading or installing Windows updates are logged with this event ID
 2050 – Downloading update
-2051 – Windows Update download not started (should not appear in prod)
-2052 – Windows Update download is in progress (should not appear in prod)
+2051 – Windows Update download not started (should not appear in eventlog since it is a state, not a result)
+2052 – Windows Update download is in progress (should not appear in eventlog since it is a state, not a result)
 2053 – The Windows Update successfully downloaded
 2054 – The Windows update successfully downloaded, but with errors
 2055 – An error occurred while downloading the Windows update
 2056 – The Window Update download was aborted
 2060 – Installing update
-2061 – Windows Update download not started (should not appear in prod)
-2062 – Windows Update download is in progress (should not appear in prod)
-2063 – The Windows Update successfully downloaded
-2064 – The Windows update successfully downloaded, but with errors
-2065 – An error occurred while downloading the Windows update
-2066 – The Window Update download was aborted
-2067 – Finished downloading and installing updates
-2068 – Some of the installed updates requires a reboot. Please do so at your earliest convenience. This is only logged if the script is not set to reboot or shutdown the computer.
-
+2061 – Windows Update install not started (should not appear in eventlog since it is a state, not a result)
+2062 – Windows Update install is in progress (should not appear in eventlog since it is a state, not a result)
+2063 – The Windows Update successfully installed
+2064 – The Windows update successfully installed, but with errors
+2065 – An error occurred while installing the Windows update
+2066 – The Window Update installation was aborted
+2067 - If any updates failed to download, this will tell you how many failed
+2068 - If any updates failed to install, this will tell you how many failed
+2069 – Some of the installed updates requires a reboot. Please do so at your earliest convenience. This is only logged if the script is not set to reboot or shutdown the computer.
+2070 – Finished downloading and installing updates
