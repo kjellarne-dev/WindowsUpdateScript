@@ -76,6 +76,8 @@ Param (
 $EventLogName = "CompanyName"
 
 #EventLogSource details what name will appear as 'source' in the event log (will be created if it does not exist)
+#Note that if the source already exists on the computer, the script will not create the event log from the above variable.
+#It errors out if it tries to create a source that already exists. Instead the script will log to the eventlog that the source is already connected to
 $EventLogSource = "Windows Update Script"
 
 #This details the location and name of the script - used when the script needs to reboot the computer. 
@@ -105,15 +107,33 @@ Function Initialize-EventLog {
         [String] $EventLogName
     )
 
-    #Create new event log if it does not exist
-    If (!$(Test-Path "HKLM:\SYSTEM\CurrentControlSet\services\eventlog\$EventLogName")) {
-       New-EventLog -LogName $EventLogName $EventLogSource
-       Limit-EventLog -LogName $EventLogName -RetentionDays 90 -OverFlowAction OverwriteOlder -MaximumSize 150MB
-    }
-
-    #Create new event log source if it does not exist
-    If ($(Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\services\eventlog\$EventLogName").PSChildName -notcontains $EventLogSource) {    
-        New-EventLog -LogName $EventLogName -Source $EventLogSource
+    #Check if Source exists
+    If ([System.Diagnostics.EventLog]::SourceExists($EventLogSource)) {
+        #Source Exists
+        #Check if Eventlog exists
+        If (Get-WinEvent -ListLog $EventLogName -ErrorAction SilentlyContinue) {
+            #Eventlog Exists
+            #Check if source is part of eventlog
+            If ($EventLogSource -Contains $(Get-WinEvent -ListLog $EventLogName -ErrorAction SilentlyContinue)) {
+                #Event Log Source exists and is part of the Event Log. Script is happy!
+            } Else {
+                #Event Log Source exists but is not part of the event log. Using whatever eventlog it is connected to
+                $EventLogName = [System.Diagnostics.EventLog]::LogNameFromSourceName("$EventLogSource",".")
+            }
+        } Else {
+            #EventLog Does not exist. Using whatever eventlog the source is connected to
+            $EventLogName = [System.Diagnostics.EventLog]::LogNameFromSourceName("$EventLogSource",".")
+        }
+    } Else {
+        #Source does not exist
+        If (Get-WinEvent -ListLog $EventLogName -ErrorAction SilentlyContinue) {
+            #Event Log exists. Adding this script to the list of sources available
+            New-EventLog -LogName $EventLogName -Source $EventLogSource
+        } Else {
+           #Event Log does not exist. Creating event log along with the source
+           New-EventLog -LogName $EventLogName -Source $EventLogSource
+           Limit-EventLog -LogName $EventLogName -RetentionDays 90 -OverFlowAction OverwriteOlder -MaximumSize 150MB
+        }
     }
 }
 
@@ -492,8 +512,13 @@ Function Register-ScriptScheduledTask {
         $ScriptPath = $MyInvocation.MyCommand.Path
     }
 
-    $ArgumentList = "-ExecutionPolicy "+$ScheduledTaskExecutionPolicy
+    #Check if executionpolicy exists, appending to argument list in case it is
+    If ($ScheduledTaskExecutionPolicy) {
+        $ArgumentList = " -ExecutionPolicy "+$ScheduledTaskExecutionPolicy
+    }
     $ArgumentList += " -File "+$ScriptPath
+
+    #Check if shutdown switch was provided, piping it through to the temporary scheduled task in case it is
     If ($ShutDown) {
         $ArgumentList += " -Shutdown"
     }
@@ -513,7 +538,7 @@ Function Register-ScriptScheduledTask {
     #OS is Windows 8.1 or lower
         $SchTaskDate = $(Get-Date -Format d)
         $SchTaskTime = $(Get-Date(Get-Date).AddMinutes($ScheduledTaskWaitMinutes) -Format T)
-        $SchTaskArgs = "Powershell.exe "+$ArgumentList
+        $SchTaskArgs = "Powershell.exe"+$ArgumentList
 
         #Create the scheduled task
         schtasks.exe /Create /TN $TaskName /TR $SchTaskArgs /SC "ONCE" /SD $SchTaskDate /ST $SchTaskTime /RU "NT AUTHORITY\SYSTEM" /RL "HIGHEST" /V1 /F
