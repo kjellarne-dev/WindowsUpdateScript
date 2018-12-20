@@ -1,5 +1,5 @@
 # WindowsUpdateScript
-A powershell script that runs Windows Update, logging everything to the event log,reboots if necessary and shut down the computer after it is finished (all depending on parameters provided)
+A powershell script that runs Windows Update, logging everything to the event log, reboots if necessary and shut down the computer after it is finished (all depending on parameters provided)
 
 This script is designed to run directly on client computers, for example a scheduled task deployed through GPOs. My recommendation is to run it from a network share where all domain computers have read access, but not write access (like \\\\domain.com\netlogon). That way no end user can modify the code, even if their computer is compromised.
 
