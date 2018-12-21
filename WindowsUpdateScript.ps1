@@ -135,6 +135,14 @@ Function Initialize-EventLog {
            Limit-EventLog -LogName $LogName -RetentionDays 90 -OverFlowAction OverwriteOlder -MaximumSize 150MB
         }
     }
+
+    #Return the (potentially new) logname and source to the script
+
+    $EventLogVariable = [PSCustomObject]@{
+        LogName = $LogName
+        Source = $Source
+    }
+    Write-Output $EventLogVariable
 }
 
 Function Out-Log {
@@ -587,7 +595,11 @@ Function Unregister-ScriptScheduledTask {
 ################################################
 
 #Set up the event log logging destination
-Initialize-EventLog -LogName $EventLogName -Source $EventLogSource
+$NewEventLogVariable = Initialize-EventLog -LogName $EventLogName -Source $EventLogSource
+
+#Applying the logname and source once more, in case they changed in the initialize-eventlog function
+$EventLogName = $NewEventLogVariable.LogName
+$EventLogSource = $NewEventLogVariable.Source
 
 #Start of script, writing a start point to the log
 Out-Log -LogMessage "Starting Windows Update Script" -EventID 2001
