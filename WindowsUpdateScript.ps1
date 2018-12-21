@@ -102,37 +102,37 @@ $ScheduledTaskWaitMinutes = 5
 
 Function Initialize-EventLog {
     Param (
-        [String] $EventLogSource ,
+        [String] $Source ,
 
-        [String] $EventLogName
+        [String] $LogName
     )
 
     #Check if Source exists
-    If ([System.Diagnostics.EventLog]::SourceExists($EventLogSource)) {
+    If ([System.Diagnostics.EventLog]::SourceExists($Source)) {
         #Source Exists
         #Check if Eventlog exists
-        If (Get-WinEvent -ListLog $EventLogName -ErrorAction SilentlyContinue) {
+        If (Get-WinEvent -ListLog $LogName -ErrorAction SilentlyContinue) {
             #Eventlog Exists
             #Check if source is part of eventlog
-            If ($EventLogSource -Contains $(Get-WinEvent -ListLog $EventLogName -ErrorAction SilentlyContinue)) {
+            If ($Source -Contains $(Get-WinEvent -ListLog $LogName -ErrorAction SilentlyContinue)) {
                 #Event Log Source exists and is part of the Event Log. Script is happy!
             } Else {
                 #Event Log Source exists but is not part of the event log. Using whatever eventlog it is connected to
-                $EventLogName = [System.Diagnostics.EventLog]::LogNameFromSourceName("$EventLogSource",".")
+                $LogName = [System.Diagnostics.EventLog]::LogNameFromSourceName("$Source",".")
             }
         } Else {
             #EventLog Does not exist. Using whatever eventlog the source is connected to
-            $EventLogName = [System.Diagnostics.EventLog]::LogNameFromSourceName("$EventLogSource",".")
+            $LogName = [System.Diagnostics.EventLog]::LogNameFromSourceName("$Source",".")
         }
     } Else {
         #Source does not exist
-        If (Get-WinEvent -ListLog $EventLogName -ErrorAction SilentlyContinue) {
+        If (Get-WinEvent -ListLog $LogName -ErrorAction SilentlyContinue) {
             #Event Log exists. Adding this script to the list of sources available
-            New-EventLog -LogName $EventLogName -Source $EventLogSource
+            New-EventLog -LogName $LogName -Source $Source
         } Else {
            #Event Log does not exist. Creating event log along with the source
-           New-EventLog -LogName $EventLogName -Source $EventLogSource
-           Limit-EventLog -LogName $EventLogName -RetentionDays 90 -OverFlowAction OverwriteOlder -MaximumSize 150MB
+           New-EventLog -LogName $LogName -Source $Source
+           Limit-EventLog -LogName $LogName -RetentionDays 90 -OverFlowAction OverwriteOlder -MaximumSize 150MB
         }
     }
 }
@@ -587,7 +587,7 @@ Function Unregister-ScriptScheduledTask {
 ################################################
 
 #Set up the event log logging destination
-Initialize-EventLog -EventLogName $EventLogName -EventLogSource $EventLogSource
+Initialize-EventLog -LogName $EventLogName -Source $EventLogSource
 
 #Start of script, writing a start point to the log
 Out-Log -LogMessage "Starting Windows Update Script" -EventID 2001
