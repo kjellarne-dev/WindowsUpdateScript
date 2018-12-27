@@ -1,4 +1,4 @@
-#Requires -Version 5
+#Requires -Version 4
 ################################################
 #WindowsUpdateScript.ps1
 #Script which automate checking for Windows Updates, downloading and installing
@@ -6,7 +6,7 @@
 #Written by:    Kjell-Arne Lillevik Dahlen
 #Version:       2.0.20181227
 #Last Change:   27. Dec 2018
-#Note:          Tested on Windows 7, 10 and Server 2019. I've only tested on PowerShell version 5.0, but in theory everything from PSv3.0 and up should work.
+#Note:          Tested on Windows 7, 10 and Server 2019. I've only tested on PowerShell version 4.0 and 5.0, but in theory everything from PSv3.0 and up should work.
 #               If you want to test it on 3.0 (again, I take no responsibility for any issues that may arise), edit the top line to "Requires -Version 3"
 ################################################
 #HELP MENU
@@ -432,7 +432,7 @@ Function Start-WindowsService {
 
     #Check whether service is running or not
     If ((Get-Service -Name $ServiceName).Status -ne "Running") {
-        Out-Log -LogLevel "Error" -LogMessage "$ServiceName is not started - Configuring service to start automatically at boot and manually firing it up" -EventID 2020
+        Out-Log -LogMessage "$ServiceName is not started - Configuring service to start automatically at boot and manually firing it up" -EventID 2020
         Set-Service  $ServiceName -StartupType Automatic
 
         #Attempting to start the service
@@ -461,6 +461,24 @@ Function Start-WindowsService {
     }
 }
 
+Function Get-WindowsVersion {
+    #This function retrieves the version from the hal.dll file in System32 directory
+    #Version 5.0 is XP, 6.0 is Vista, 6.1 is W7, 6.2 is W8, 6.3 is W8.1 and 10 is W10
+    #Her is a list of different int variables returned:
+
+    #Windows XP: 50
+    #Windows Vista: 60
+    #Windows 7: 61
+    #Windows 8.0: 62
+    #Windows 8.1: 63
+    #Windows 10: 100
+
+    $ProductVersion = ((Get-ItemProperty -Path C:\Windows\System32\hal.dll).VersionInfo.ProductVersion) -Split "\."
+    $OSVersion = $ProductVersion | Select-Object -Index 0
+    $OSVersion += $ProductVersion | Select-Object -Index 1
+    Return [Int]$OSVersion
+}
+
 Function Get-ScriptScheduledTask {
     Param (
         [Parameter(Mandatory=$True)]
@@ -468,7 +486,7 @@ Function Get-ScriptScheduledTask {
         [String] $TaskName
     )
 
-    If ($OSVersion -ge "10*") {
+    If ($OSVersion -ge "100") {
     #OS is Windows 10 or higher
         $ScheduledTask = Get-ScheduledTask | Where-Object TaskName -Contains $TaskName
     } Else {
@@ -531,7 +549,7 @@ Function Register-ScriptScheduledTask {
         $ArgumentList += " -Shutdown"
     }
 
-    If ($OSVersion -ge "10*") {
+    If ($OSVersion -ge "100") {
     #OS is Windows 10 or higher
         #Execute PowerShell with the same shutdown flag that the script was originally ran with
         $TaskAction = New-ScheduledTaskAction -Execute "Powershell.exe" -Argument $ArgumentList
@@ -556,7 +574,7 @@ Function Register-ScriptScheduledTask {
         Out-Log -LogMessage "Scheduled task $TaskName successfully registered" -EventID 2031
         Return $True
     } Else {
-        Out-Log -LogMessage "Could not register scheduled task $TaskName" -EventID 2032
+        Out-Log -LogLevel "Error" -LogMessage "Could not register scheduled task $TaskName" -EventID 2032
         Return $False
     }
 }
@@ -572,7 +590,7 @@ Function Unregister-ScriptScheduledTask {
     If (Get-ScriptScheduledTask -TaskName $TaskName) {
         Out-Log -LogMessage "Scheduled Task $TaskName exists. Unregistering task" -EventID 2033
 
-        If ($OSVersion -ge "10*") {
+        If ($OSVersion -ge "100") {
         #OS is Windows 10 or higher
             Unregister-ScheduledTask -TaskName $TaskName -Confirm:$False
         } Else {
@@ -581,7 +599,7 @@ Function Unregister-ScriptScheduledTask {
         }
 
         If (Get-ScriptScheduledTask -TaskName $TaskName) {
-            Out-Log -LogMessage "Scheduled Task $TaskName could not be unregistered due to an error" -EventID 2035
+            Out-Log -LogLevel "Error" -LogMessage "Scheduled Task $TaskName could not be unregistered due to an error" -EventID 2035
             Return $False
         } Else {
             Out-Log -LogMessage "Scheduled Task $TaskName was successfully unregistered" -EventID 2034
@@ -604,16 +622,16 @@ $EventLogSource = $NewEventLogVariable.Source
 #Start of script, writing a start point to the log
 Out-Log -LogMessage "Starting Windows Update Script" -EventID 2001
 
-#Check what version of Windows is running
-$OSVersion = (Get-ItemProperty -Path C:\Windows\System32\hal.dll).VersionInfo.FileVersion
+#Check what version of Windows is running. Ref the Get-WindowsVersion function for which value corresponds to which version of Windows
+$OSVersion = Get-WindowsVersion
 
 #Check if computer needs a reboot
 If ($(Get-PendingReboot).RebootPending) {  
-    Out-Log -LogLevel "Warning" -LogMessage "The system requires a reboot before Windows Update is able to run" -EventID 2010
+    Out-Log -LogMessage "The system requires a reboot before Windows Update is able to run" -EventID 2010
     
     If ($NoReboot) {
         #NoReboot flag was set. Skipping reboot and terminating script
-        Out-Log -LogMessage "NoReboot flag was set. Please reboot the computer and try again. Terminating script" -EventID 2012
+        Out-Log -LogLevel "Warning" -LogMessage "NoReboot flag was set. Please reboot the computer and try again. Terminating script" -EventID 2012
         Exit-Script
     }
 
@@ -710,11 +728,13 @@ Try {
 
             #Check if the failed to install
             If (4,5 -contains $InstallResult.ResultCode) {
+                #Install failed, adding to failed counter
                 $FailedInstallCounter++
             }
 
             $NeedsReboot += @($installResult.rebootRequired)
         } Else {
+            #Download failed, adding to failed counter
             $FailedDownloadCounter++
         }
     
@@ -724,12 +744,12 @@ Try {
 
     #Checking if any updates failed to download
     If ($FailedDownloadCounter) {
-        Out-Log -LogLevel "Error" -LogMessage "$FailedCounter updates failed to download" -EventID 2067
+        Out-Log -LogLevel "Error" -LogMessage "$FailedDownloadCounter updates failed to download" -EventID 2067
     }
     
     #Checking if any updates failed to install
     If ($FailedInstallCounter) {
-        Out-Log -LogLevel "Error" -LogMessage "$FailedCounter updates failed to install" -EventID 2068
+        Out-Log -LogLevel "Error" -LogMessage "$FailedInstallCounter updates failed to install" -EventID 2068
     }
     
     Out-Log -LogMessage "Finished downloading and installing updates" -EventID 2070
@@ -737,7 +757,7 @@ Try {
     If ($NeedsReboot -Contains $True) {
         If ($NoReboot -and !$Shutdown) {
             #Write message to event log in case the computer is not going to reboot or shut down
-            Out-Log -LogMessage "Some updates require a reboot. Please do so at your earliest convenience" -EventID 2069
+            Out-Log -LogLevel "Warning" -LogMessage "Some updates require a reboot. Please do so at your earliest convenience" -EventID 2069
         }
     }
 
