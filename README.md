@@ -10,3 +10,9 @@ Run a Get-Help WindowsUpdateScript.ps1 for more information (or just read it in 
 
 
 This PowerShell Script saves events to a custom eventlog by default. I have not tested if it is possible to write to any of the preexisting event logs, but in theory it should be possible.
+
+
+
+
+# Known Issues
+The script has an issue where if the source already exists somewhere else on the system, but the event log doesn't, then it is unable to create the event log. Current workaround is to use the event log where the source already exists (the script does this automatically), but I'm looking to see if there is any possibility of a proper fix.
