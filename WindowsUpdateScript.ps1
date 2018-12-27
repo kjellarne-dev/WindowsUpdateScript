@@ -464,7 +464,7 @@ Function Start-WindowsService {
 Function Get-WindowsVersion {
     #This function retrieves the version from the hal.dll file in System32 directory
     #Version 5.0 is XP, 6.0 is Vista, 6.1 is W7, 6.2 is W8, 6.3 is W8.1 and 10 is W10
-    #Her is a list of different int variables returned:
+    #Here is a list of different int variables returned:
 
     #Windows XP: 50
     #Windows Vista: 60
