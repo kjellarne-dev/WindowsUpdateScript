@@ -4,8 +4,8 @@
 #Script which automate checking for Windows Updates, downloading and installing
 #
 #Written by:    Kjell-Arne Lillevik Dahlen
-#Version:       2.0.20181227
-#Last Change:   27. Dec 2018
+#Version:       2.1
+#Last Change:   07. Jan 2018
 #Note:          Tested on Windows 7, 10 and Server 2019. I've only tested on PowerShell version 4.0 and 5.0, but in theory everything from PSv3.0 and up should work.
 #               If you want to test it on 3.0 (again, I take no responsibility for any issues that may arise), edit the top line to "Requires -Version 3"
 ################################################
