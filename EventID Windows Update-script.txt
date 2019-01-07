@@ -3,15 +3,15 @@ EventID overview for Windows Update-script
 2000 – Default event ID, the script will fall back to this if it fails to apply an event ID somewhere
 2001 – Script start
 2002 – Script finished, exiting script without shutting down
-2003 – Script finished, exiting script and shutting down
+2003 – Script finished and shutdown parameter was provided, exiting script and shutting down computer
 2004 – Script is attempting to reboot the computer before continuing
 2010 – Computer requires a reboot before script can run Windows Update
 2011 – NoReboot-flag has not been set, and the computer has not tried to reboot
-2012 – NoReboot-flag set, script can’t continue and will terminate
+2012 – NoReboot-flag set and computer requires a reboot, script can’t continue and will terminate
 2013 – The script found the scheduled task that it creates before a reboot. This means that the script has already tried to reboot once within defined timeframe
 2020 – Windows Update-service was not running. Attempting to start it
 2021 – Windows Update-service was successfully started
-2022 – Windows Update-service was not started. Script is terminating
+2022 – Windows Update-service was unable to start. Script is terminating
 2030 – Registering scheduled task before rebooting computer
 2031 – Scheduled task successfully registered
 2032 – An error occurred while registering the scheduled task
