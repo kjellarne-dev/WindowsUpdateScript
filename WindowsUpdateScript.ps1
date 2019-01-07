@@ -462,8 +462,8 @@ Function Start-WindowsService {
 }
 
 Function Get-WindowsVersion {
-    #This function retrieves the version from the hal.dll file in System32 directory
-    #Version 5.0 is XP, 6.0 is Vista, 6.1 is W7, 6.2 is W8, 6.3 is W8.1 and 10 is W10
+    #This function retrieves the Windows version number from hal.dll in the System32 directory
+    #Version 5.0 is XP, 6.0 is Vista, 6.1 is W7, 6.2 is W8, 6.3 is W8.1 and 10.0 is W10
     #Here is a list of different int variables returned:
 
     #Windows XP: 50
@@ -473,7 +473,8 @@ Function Get-WindowsVersion {
     #Windows 8.1: 63
     #Windows 10: 100
 
-    $ProductVersion = ((Get-ItemProperty -Path C:\Windows\System32\hal.dll).VersionInfo.ProductVersion) -Split "\."
+    $SystemRoot = Get-ChildItem Env:SystemRoot | Select-Object -ExpandProperty Value
+    $ProductVersion = ((Get-ItemProperty -Path $SystemRoot\System32\hal.dll).VersionInfo.ProductVersion) -Split "\."
     $OSVersion = $ProductVersion | Select-Object -Index 0
     $OSVersion += $ProductVersion | Select-Object -Index 1
     Return [Int]$OSVersion
